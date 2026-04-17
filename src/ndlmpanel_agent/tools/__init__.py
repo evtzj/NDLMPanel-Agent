@@ -11,6 +11,8 @@ from ndlmpanel_agent.tools.ops.filesystem.filesystem_tools import (
     deleteDirectory,
     deleteFile,
     listDirectory,
+    listSingleFileOrDirectory,
+    grepFileOrDirectory,
     renameFileOrDirectory,
 )
 from ndlmpanel_agent.tools.ops.firewall.firewall_tools import (
@@ -52,6 +54,8 @@ __all__ = [
     "getNetworkInfo",
     # 文件系统
     "listDirectory",
+    "listSingleFileOrDirectory",
+    "grepFileOrDirectory",
     "createFile",
     "createDirectory",
     "deleteFile",

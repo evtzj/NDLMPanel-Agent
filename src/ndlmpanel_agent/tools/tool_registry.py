@@ -44,6 +44,8 @@ RISK_LEVEL_MAP: dict[str, ToolRiskLevel] = {
     "getFirewallStatus": ToolRiskLevel.READ_ONLY,
     "listFirewallPorts": ToolRiskLevel.READ_ONLY,
     "listDirectory": ToolRiskLevel.READ_ONLY,
+    "listSingleFileOrDirectory": ToolRiskLevel.READ_ONLY,
+    "grepFileOrDirectory": ToolRiskLevel.READ_ONLY,
     "listProcesses": ToolRiskLevel.READ_ONLY,
     "querySystemLogs": ToolRiskLevel.READ_ONLY,
     "listUsers": ToolRiskLevel.READ_ONLY,
