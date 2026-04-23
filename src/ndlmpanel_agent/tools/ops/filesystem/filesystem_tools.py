@@ -17,6 +17,10 @@ from ndlmpanel_agent.exceptions import (
     ToolExecutionException,
 )
 from ndlmpanel_agent.models.ops.filesystem.filesystem_models import (
+    CompressResult,
+    DecompressResult,
+    DirectoryTreeNode,
+    DirectoryTreeResult,
     FileInfo,
     FileOperationResult,
     FileType,
@@ -24,6 +28,9 @@ from ndlmpanel_agent.models.ops.filesystem.filesystem_models import (
     GrepResult,
     OwnerChangeResult,
     PermissionChangeResult,
+    TextFileCheckResult,
+    TextFileReadResult,
+    TextFileWriteResult,
 )
 
 
@@ -464,3 +471,236 @@ def changeOwner(
         return OwnerChangeResult(success=True, newOwner=owner, newGroup=group)
     except PermissionError:
         raise PermissionDeniedException(f"无权修改所有者(通常需要root): {targetPath}")
+
+
+# ────────────────── 新增工具函数 ──────────────────
+
+
+def _buildDirectoryTree(path: Path, currentDepth: int, maxDepth: int) -> DirectoryTreeNode:
+    node = DirectoryTreeNode(
+        fileName=path.name,
+        fileType=_resolveFileType(path),
+        absolutePath=str(path.resolve()),
+    )
+
+    if currentDepth >= maxDepth or not path.is_dir():
+        return node
+
+    try:
+        entries = sorted(path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
+    except PermissionError:
+        return node
+
+    for entry in entries:
+        try:
+            child = _buildDirectoryTree(entry, currentDepth + 1, maxDepth)
+            node.children.append(child)
+        except (PermissionError, OSError):
+            continue
+
+    return node
+
+
+def getDirectoryTree(targetPath: str, maxDepth: int = 1) -> DirectoryTreeResult:
+    path = Path(targetPath)
+    _requireExists(path, "目录")
+    if not path.is_dir():
+        raise ToolExecutionException(f"目标不是目录: {targetPath}")
+    if maxDepth < 1:
+        raise ToolExecutionException(f"递归深度必须大于0: {maxDepth}")
+
+    try:
+        tree = _buildDirectoryTree(path, 0, maxDepth)
+        return DirectoryTreeResult(
+            success=True,
+            rootPath=str(path.resolve()),
+            maxDepth=maxDepth,
+            tree=tree,
+        )
+    except PermissionError:
+        raise PermissionDeniedException(f"无权访问目录: {targetPath}")
+
+
+def copyFile(sourcePath: str, destinationPath: str) -> FileOperationResult:
+    src = Path(sourcePath)
+    _requireExists(src, "源文件")
+    if not src.is_file():
+        raise ToolExecutionException(f"源路径不是文件: {sourcePath}")
+
+    dst = Path(destinationPath)
+    try:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        return FileOperationResult(success=True, absolutePath=str(dst.resolve()))
+    except PermissionError:
+        raise PermissionDeniedException(f"无权拷贝文件: {sourcePath} → {destinationPath}")
+    except OSError as e:
+        raise ToolExecutionException(f"拷贝文件失败: {e}")
+
+
+def isTextFile(targetPath: str) -> TextFileCheckResult:
+    path = Path(targetPath)
+    _requireExists(path, "文件")
+    if not path.is_file():
+        return TextFileCheckResult(
+            isTextFile=False,
+            targetPath=targetPath,
+            detectedEncoding=None,
+        )
+
+    try:
+        chunk = path.read_bytes()
+    except PermissionError:
+        raise PermissionDeniedException(f"无权读取文件: {targetPath}")
+
+    if b"\x00" in chunk:
+        return TextFileCheckResult(
+            isTextFile=False,
+            targetPath=targetPath,
+            detectedEncoding=None,
+        )
+
+    encoding = None
+    for enc in ("utf-8", "gbk", "gb2312", "latin-1"):
+        try:
+            chunk.decode(enc)
+            encoding = enc
+            break
+        except (UnicodeDecodeError, LookupError):
+            continue
+
+    return TextFileCheckResult(
+        isTextFile=encoding is not None,
+        targetPath=targetPath,
+        detectedEncoding=encoding,
+    )
+
+
+def compressPath(targetPath: str) -> CompressResult:
+    path = Path(targetPath)
+    _requireExists(path, "目标路径")
+
+    if path.is_file():
+        archiveStem = path.stem
+    elif path.is_dir():
+        archiveStem = path.name
+    else:
+        raise ToolExecutionException(f"不支持的文件类型: {targetPath}")
+
+    archiveBasePath = path.parent / archiveStem
+    archivePath = path.parent / (archiveStem + ".tar.gz")
+
+    try:
+        if path.is_dir():
+            shutil.make_archive(
+                base_name=str(archiveBasePath),
+                format="gztar",
+                root_dir=str(path.parent),
+                base_dir=path.name,
+            )
+        else:
+            import tarfile
+            with tarfile.open(str(archivePath), "w:gz") as tar:
+                tar.add(str(path), arcname=path.name)
+
+        st = archivePath.stat()
+        return CompressResult(
+            success=True,
+            sourcePath=str(path.resolve()),
+            archivePath=str(archivePath.resolve()),
+            archiveSizeBytes=st.st_size,
+        )
+    except PermissionError:
+        raise PermissionDeniedException(f"无权创建压缩文件: {archivePath}")
+    except OSError as e:
+        raise ToolExecutionException(f"压缩失败: {e}")
+
+
+def decompressArchive(archivePath: str, targetPath: str | None = None) -> DecompressResult:
+    path = Path(archivePath)
+    _requireExists(path, "压缩文件")
+    if not path.is_file():
+        raise ToolExecutionException(f"目标不是文件: {archivePath}")
+
+    suffixes = path.suffixes
+    isZip = suffixes[-1] == ".zip"
+    isTarGz = len(suffixes) >= 2 and suffixes[-2] == ".tar" and suffixes[-1] == ".gz"
+    isTar = suffixes[-1] == ".tar" and not isTarGz
+
+    if not (isZip or isTarGz or isTar):
+        raise ToolExecutionException(
+            f"不支持的压缩格式，仅支持 .tar.gz / .tar / .zip: {archivePath}"
+        )
+
+    if targetPath is None:
+        targetPath = str(path.parent)
+
+    dest = Path(targetPath)
+    try:
+        dest.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        raise PermissionDeniedException(f"无权创建目标目录: {targetPath}")
+
+    try:
+        if isZip:
+            shutil.unpack_archive(str(path), str(dest), format="zip")
+        elif isTarGz:
+            shutil.unpack_archive(str(path), str(dest), format="gztar")
+        elif isTar:
+            shutil.unpack_archive(str(path), str(dest), format="tar")
+
+        return DecompressResult(
+            success=True,
+            archivePath=str(path.resolve()),
+            targetPath=str(dest.resolve()),
+        )
+    except PermissionError:
+        raise PermissionDeniedException(f"无权解压文件: {archivePath}")
+    except OSError as e:
+        raise ToolExecutionException(f"解压失败: {e}")
+
+
+def readTextFile(targetPath: str) -> TextFileReadResult:
+    path = Path(targetPath)
+    _requireExists(path, "文件")
+    if not path.is_file():
+        raise ToolExecutionException(f"目标不是文件: {targetPath}")
+
+    check = isTextFile(targetPath)
+    if not check.isTextFile:
+        raise ToolExecutionException(f"目标不是文本文件: {targetPath}")
+
+    try:
+        content = path.read_text(encoding=check.detectedEncoding or "utf-8")
+        st = path.stat()
+        return TextFileReadResult(
+            success=True,
+            targetPath=targetPath,
+            content=content,
+            encoding=check.detectedEncoding,
+            sizeBytes=st.st_size,
+        )
+    except PermissionError:
+        raise PermissionDeniedException(f"无权读取文件: {targetPath}")
+    except OSError as e:
+        raise ToolExecutionException(f"读取文件失败: {e}")
+
+
+def writeTextFile(targetPath: str, content: str) -> TextFileWriteResult:
+    path = Path(targetPath)
+    _requireExists(path, "文件")
+    if not path.is_file():
+        raise ToolExecutionException(f"目标文件不存在，无法写入: {targetPath}")
+
+    try:
+        path.write_text(content, encoding="utf-8")
+        st = path.stat()
+        return TextFileWriteResult(
+            success=True,
+            targetPath=targetPath,
+            sizeBytes=st.st_size,
+        )
+    except PermissionError:
+        raise PermissionDeniedException(f"无权写入文件: {targetPath}")
+    except OSError as e:
+        raise ToolExecutionException(f"写入文件失败: {e}")

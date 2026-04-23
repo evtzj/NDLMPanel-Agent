@@ -6,14 +6,21 @@ from ndlmpanel_agent.tools.ops.misc.docker_tools import checkDockerInstalled, ge
 from ndlmpanel_agent.tools.ops.filesystem.filesystem_tools import (
     changeOwner,
     changePermissions,
+    compressPath,
+    copyFile,
     createDirectory,
     createFile,
+    decompressArchive,
     deleteDirectory,
     deleteFile,
+    getDirectoryTree,
+    isTextFile,
     listDirectory,
     listSingleFileOrDirectory,
     grepFileOrDirectory,
+    readTextFile,
     renameFileOrDirectory,
+    writeTextFile,
 )
 from ndlmpanel_agent.tools.ops.firewall.firewall_tools import (
     addFirewallPort,
@@ -24,7 +31,14 @@ from ndlmpanel_agent.tools.ops.firewall.firewall_tools import (
 from ndlmpanel_agent.tools.ops.misc.log_tools import querySystemLogs
 from ndlmpanel_agent.tools.ops.network.network_tools import checkPortConnectivity, pingHost
 from ndlmpanel_agent.tools.ops.misc.nginx_tools import checkNginxInstalled, getNginxStatus
-from ndlmpanel_agent.tools.ops.process.process_tools import killProcess, listProcesses
+from ndlmpanel_agent.tools.ops.process.process_tools import (
+    autoCleanProcesses,
+    batchKillProcesses,
+    getProcessDetail,
+    getZombieOrphanProcesses,
+    killProcess,
+    listProcesses,
+)
 from ndlmpanel_agent.tools.ops.service.service_tools import manageSystemService
 from ndlmpanel_agent.tools.ops.misc.system_info_tools import (
     getEnvironmentVariables,
@@ -56,6 +70,13 @@ __all__ = [
     "listDirectory",
     "listSingleFileOrDirectory",
     "grepFileOrDirectory",
+    "getDirectoryTree",
+    "copyFile",
+    "isTextFile",
+    "compressPath",
+    "decompressArchive",
+    "readTextFile",
+    "writeTextFile",
     "createFile",
     "createDirectory",
     "deleteFile",
@@ -66,6 +87,10 @@ __all__ = [
     # 进程
     "listProcesses",
     "killProcess",
+    "getProcessDetail",
+    "autoCleanProcesses",
+    "getZombieOrphanProcesses",
+    "batchKillProcesses",
     # 日志
     "querySystemLogs",
     # 用户

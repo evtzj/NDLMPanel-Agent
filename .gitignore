@@ -16,3 +16,4 @@ logs/
 # Local Environment variables
 .env
 .alma-snapshots
+.vscode/launch.json
