@@ -75,7 +75,10 @@ def listDirectory(targetPath: str) -> list[FileInfo]:
 
     results: list[FileInfo] = []
     try:
-        entries = sorted(path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower()))
+        entries = sorted(
+            (e for e in path.iterdir() if e.is_dir()),
+            key=lambda x: x.name.lower(),
+        )
     except PermissionError:
         raise PermissionDeniedException(f"无权访问目录: {targetPath}")
 
