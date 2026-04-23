@@ -58,3 +58,63 @@ class GrepResult(BaseModel):
     matches: list[GrepMatch]
     totalMatches: int
     errorMessage: str | None = None
+
+
+class DirectoryTreeNode(BaseModel):
+    """目录树中的单个节点"""
+    fileName: str
+    fileType: FileType
+    absolutePath: str
+    children: list["DirectoryTreeNode"] = []
+
+
+class DirectoryTreeResult(BaseModel):
+    """目录树查询结果"""
+    success: bool
+    rootPath: str
+    maxDepth: int
+    tree: DirectoryTreeNode | None = None
+    errorMessage: str | None = None
+
+
+class TextFileCheckResult(BaseModel):
+    """文本文件判断结果"""
+    isTextFile: bool
+    targetPath: str
+    detectedEncoding: str | None = None
+    errorMessage: str | None = None
+
+
+class CompressResult(BaseModel):
+    """压缩操作结果"""
+    success: bool
+    sourcePath: str
+    archivePath: str | None = None
+    archiveSizeBytes: int | None = None
+    errorMessage: str | None = None
+
+
+class DecompressResult(BaseModel):
+    """解压操作结果"""
+    success: bool
+    archivePath: str
+    targetPath: str | None = None
+    errorMessage: str | None = None
+
+
+class TextFileReadResult(BaseModel):
+    """文本文件读取结果"""
+    success: bool
+    targetPath: str
+    content: str | None = None
+    encoding: str | None = None
+    sizeBytes: int | None = None
+    errorMessage: str | None = None
+
+
+class TextFileWriteResult(BaseModel):
+    """文本文件写入结果"""
+    success: bool
+    targetPath: str
+    sizeBytes: int | None = None
+    errorMessage: str | None = None
