@@ -37,6 +37,7 @@ from ndlmpanel_agent.models import (
     MessageRole,
     NetworkInterfaceInfo,
     NginxInstallInfo,
+    NginxSiteCreateResult,
     NginxStatus,
     OperationResult,
     OwnerChangeResult,
@@ -68,6 +69,7 @@ from ndlmpanel_agent.tools import (
     copyFile,
     createDirectory,
     createFile,
+    createNginxSite,
     decompressArchive,
     deleteDirectory,
     deleteFile,
@@ -159,6 +161,7 @@ ALL_TOOL_FUNCTIONS = [
     # Nginx
     checkNginxInstalled,
     getNginxStatus,
+    createNginxSite,
     # 数据库
     checkDatabaseInstalled,
     getDatabaseStatus,
@@ -206,6 +209,7 @@ __all__ = [
     "DockerContainer",
     "NginxInstallInfo",
     "NginxStatus",
+    "NginxSiteCreateResult",
     "DatabaseInstallInfo",
     "DatabaseStatus",
     "ServiceAction",
@@ -265,6 +269,7 @@ __all__ = [
     # Nginx
     "checkNginxInstalled",
     "getNginxStatus",
+    "createNginxSite",
     # 数据库
     "checkDatabaseInstalled",
     "getDatabaseStatus",

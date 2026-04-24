@@ -79,6 +79,7 @@ RISK_LEVEL_MAP: dict[str, ToolRiskLevel] = {
     "writeTextFile": ToolRiskLevel.WRITE,
     # ── Layer 3: 高危操作（DANGEROUS）─────────────────────────────────────
     # 不可逆或影响系统安全，SafetyGuard 会要求人工确认
+    "createNginxSite": ToolRiskLevel.DANGEROUS,
     "killProcess": ToolRiskLevel.DANGEROUS,
     "deleteFile": ToolRiskLevel.DANGEROUS,
     "deleteDirectory": ToolRiskLevel.DANGEROUS,
