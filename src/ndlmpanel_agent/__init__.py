@@ -37,7 +37,6 @@ from ndlmpanel_agent.models import (
     MessageRole,
     NetworkInterfaceInfo,
     NginxInstallInfo,
-    NginxSiteCreateResult,
     NginxStatus,
     OperationResult,
     OwnerChangeResult,
@@ -57,6 +56,7 @@ from ndlmpanel_agent.models.agent.chat_models import AgentResponse, ChatMessage
 from ndlmpanel_agent.agent.orchestrator import AgentOrchestrator
 from ndlmpanel_agent.tools import (
     addFirewallPort,
+    createNginxSite,
     autoCleanProcesses,
     batchKillProcesses,
     changeOwner,
@@ -69,7 +69,6 @@ from ndlmpanel_agent.tools import (
     copyFile,
     createDirectory,
     createFile,
-    createNginxSite,
     decompressArchive,
     deleteDirectory,
     deleteFile,
@@ -209,7 +208,6 @@ __all__ = [
     "DockerContainer",
     "NginxInstallInfo",
     "NginxStatus",
-    "NginxSiteCreateResult",
     "DatabaseInstallInfo",
     "DatabaseStatus",
     "ServiceAction",
@@ -269,7 +267,6 @@ __all__ = [
     # Nginx
     "checkNginxInstalled",
     "getNginxStatus",
-    "createNginxSite",
     # 数据库
     "checkDatabaseInstalled",
     "getDatabaseStatus",

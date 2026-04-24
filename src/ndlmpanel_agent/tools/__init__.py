@@ -30,11 +30,7 @@ from ndlmpanel_agent.tools.ops.firewall.firewall_tools import (
 )
 from ndlmpanel_agent.tools.ops.misc.log_tools import querySystemLogs
 from ndlmpanel_agent.tools.ops.network.network_tools import checkPortConnectivity, pingHost
-from ndlmpanel_agent.tools.ops.misc.nginx_tools import (
-    checkNginxInstalled,
-    createNginxSite,
-    getNginxStatus,
-)
+from ndlmpanel_agent.tools.ops.misc.nginx_tools import checkNginxInstalled, getNginxStatus, createNginxSite
 from ndlmpanel_agent.tools.ops.process.process_tools import (
     autoCleanProcesses,
     batchKillProcesses,

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from enum import Enum  
 
 class NginxInstallInfo(BaseModel):
     isInstalled: bool
@@ -13,14 +13,29 @@ class NginxStatus(BaseModel):
     activeConnections: int | None = None
     requestsPerSecond: float | None = None
 
+class NginxSiteMode(str,Enum):
+    STATIC = "static"
+    REVERSE_PROXY = "reverse_proxy"
 
 class NginxSiteCreateResult(BaseModel):
-    domainName: str
-    mode: str
+    domain: str
+    mode: NginxSiteMode
     listenPort: int
     configPath: str
     enabledPath: str | None = None
     rootPath: str | None = None
     proxyPass: str | None = None
-    isEnabled: bool
-    isReloaded: bool
+    isEnabled: bool 
+    isReloaded: bool 
+
+# class NginxSiteProxyResult(BaseModel):
+#     domain: str
+#     mode: NginxSiteMode
+#     listenPort: int
+#     configPath: str
+#     enabledPath: str | None = None
+#     rootPath: str 
+#     proxyPass: str 
+#     isEnabled: bool 
+#     isReloaded: bool 
+

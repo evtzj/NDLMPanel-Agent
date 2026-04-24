@@ -25,7 +25,6 @@ from ndlmpanel_agent.models.ops.misc.docker_models import (
 from ndlmpanel_agent.models.ops.misc.log_models import LogQueryResult
 from ndlmpanel_agent.models.ops.misc.nginx_models import (
     NginxInstallInfo,
-    NginxSiteCreateResult,
     NginxStatus,
 )
 from ndlmpanel_agent.models.ops.misc.system_info_models import (
@@ -86,7 +85,6 @@ __all__ = [
     "DockerContainer",
     "NginxInstallInfo",
     "NginxStatus",
-    "NginxSiteCreateResult",
     "DatabaseInstallInfo",
     "DatabaseStatus",
     "ServiceAction",
