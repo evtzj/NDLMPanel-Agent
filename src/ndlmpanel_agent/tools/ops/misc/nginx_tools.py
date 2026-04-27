@@ -1,6 +1,7 @@
+import os
 import re
+import tempfile
 import urllib.request
-
 from ndlmpanel_agent.exceptions import (
     ServiceUnavailableException,
     ToolExecutionException,
@@ -71,7 +72,7 @@ def getNginxStatus() -> NginxStatus:
         requestsPerSecond=None,
     )
 
-def buildStaticSiteConfig(domain: str, rootPath: str, listenPort: int = 80) -> str:
+def generateStaticSiteConfig(domain: str, rootPath: str, listenPort: int = 80) -> str:
     return f"""server {{
     listen {listenPort};
     server_name {domain};
@@ -82,7 +83,7 @@ def buildStaticSiteConfig(domain: str, rootPath: str, listenPort: int = 80) -> s
     }}
 }}"""
 
-def buildProxyConfig(domain: str, proxyPass: str, listenPort: int) -> str:
+def generateProxyConfig(domain: str, proxyPass: str, listenPort: int) -> str:
     return f"""server {{
     listen {listenPort};
     server_name {domain};
@@ -106,25 +107,105 @@ def createNginxSite(
     if mode == "static":
         if not rootPath:
             raise ToolExecutionException("静态站点必须提供 rootPath")
-        configContent = buildStaticSiteConfig(domain, rootPath, listenPort)
+        configContent = generateStaticSiteConfig(domain, rootPath, listenPort)
     elif mode == "reverse_proxy":
         if not proxyPass:
             raise ToolExecutionException("反向代理必须提供 proxyPass")
-        configContent = buildProxyConfig(domain, proxyPass, listenPort)
+        configContent = generateProxyConfig(domain, proxyPass, listenPort)
     else:
         raise ToolExecutionException("不支持的模式")
     
-    siteName = domain.replace("*.", "").replace("/", "_")
-    configPath = f"/etc/nginx/sites-available/{siteName}.conf"
-    enabledPath = f"/etc/nginx/sites-enabled/{siteName}.conf"
+    configPath = saveNginxConfig(domain, configContent)
+    try:
+        testNginxConfig()
+    except ToolExecutionException:
+        runCommand(["rm", "-f", configPath], useSudo=True, checkReturnCode=False)
+        raise
+
+    reloadNginx()
+
     return NginxSiteCreateResult(
         domain=domain,
         mode=mode,
         listenPort=listenPort,
         configPath=configPath,
-        enabledPath=enabledPath,
+        enabledPath=configPath,
         rootPath=rootPath if mode == "static" else None,
         proxyPass=proxyPass if mode == "reverse_proxy" else None,
-        isEnabled=False,
-        isReloaded=False,
+        isEnabled=True,
+        isReloaded=True,
     )   
+
+
+def createNginxReverseProxySite(
+    domain:str,
+    proxyPort:str,
+    proxyPass:str,
+    listenPort:int,
+    proxyProtocol:str="http"
+)-> NginxSiteCreateResult:
+    proxyPass = f"{proxyProtocol}://{proxyPass}:{proxyPort}"
+    return createNginxSite(
+        domain=domain,
+        mode="reverse_proxy",
+        listenPort=listenPort,
+        proxyPass=proxyPass
+)
+
+# 保存 Nginx 配置文件到系统
+def saveNginxConfig(configName, configContent):
+    siteName = configName.replace("*.", "").replace("/", "_")
+    if siteName.endswith(".conf"):
+        siteName = siteName[:-5]
+    configPath = f"/etc/nginx/sites-enabled/{siteName}.conf"
+
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        delete=False,
+        suffix=".conf",
+    ) as tmpFile:
+        tmpFile.write(configContent)
+        tmpPath = tmpFile.name
+
+    try:
+        runCommand(["install", "-D", "-m", "644", tmpPath, configPath], useSudo=True)
+    finally:
+        try:
+            os.unlink(tmpPath)
+        except OSError:
+            pass
+
+    return configPath
+
+
+# 测试 Nginx 配置是否合法
+def testNginxConfig():
+    runCommand(["nginx", "-t"], useSudo=True)
+
+
+# 重载 Nginx 使配置生效
+def reloadNginx():
+    runCommand(["systemctl", "reload", "nginx"], useSudo=True)
+
+
+# 重启 Nginx
+def restartNginx():
+    runCommand(["systemctl", "restart", "nginx"], useSudo=True)
+
+
+# 获取所有已创建的站点列表
+def getNginxSiteList():
+    pass
+# 删除指定站点配置
+def deleteNginxSite(configName):
+    pass
+# 自动申请 SSL 证书
+def applySslCertificate(domain, email):
+    pass
+# 自动配置 SSL 到 Nginx
+def configSslForNginx(domain, certPath, keyPath):
+    pass
+# 自动续期 SSL 证书
+def renewSslCertificate(domain):
+    pass

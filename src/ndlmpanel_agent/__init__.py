@@ -84,6 +84,8 @@ from ndlmpanel_agent.tools import (
     getMemoryInfo,
     getNetworkInfo,
     getNginxStatus,
+    generateProxyConfig,
+    generateStaticSiteConfig,
     getProcessDetail,
     getSystemVersion,
     getUptime,
@@ -102,6 +104,9 @@ from ndlmpanel_agent.tools import (
     readTextFile,
     removeFirewallPort,
     renameFileOrDirectory,
+    reloadNginx,
+    saveNginxConfig,
+    testNginxConfig,
     writeTextFile,
 )
 
@@ -160,6 +165,11 @@ ALL_TOOL_FUNCTIONS = [
     # Nginx
     checkNginxInstalled,
     getNginxStatus,
+    generateStaticSiteConfig,
+    generateProxyConfig,
+    saveNginxConfig,
+    testNginxConfig,
+    reloadNginx,
     createNginxSite,
     # 数据库
     checkDatabaseInstalled,
@@ -267,6 +277,12 @@ __all__ = [
     # Nginx
     "checkNginxInstalled",
     "getNginxStatus",
+    "generateStaticSiteConfig",
+    "generateProxyConfig",
+    "saveNginxConfig",
+    "testNginxConfig",
+    "reloadNginx",
+    "createNginxSite",
     # 数据库
     "checkDatabaseInstalled",
     "getDatabaseStatus",
