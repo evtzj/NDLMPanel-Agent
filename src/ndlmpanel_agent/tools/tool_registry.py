@@ -137,9 +137,15 @@ def _annotation_to_json_schema(annotation: Any) -> dict:
     origin = get_origin(annotation)  # 获取泛型基类，如 list、Union
     args = get_args(annotation)  # 获取泛型参数，如 (str, NoneType)
 
-    # list[X] → array
+    # list[X] → array，OpenAI function calling 需要显式 items
     if origin is list:
-        return {"type": "array"}
+        item_schema: dict[str, Any] = {"type": "string"}
+        if args:
+            item_schema = _annotation_to_json_schema(args[0])
+        return {
+            "type": "array",
+            "items": item_schema,
+        }
 
     # Python 3.10+ 的 X | Y 语法（types.UnionType）
     # 以及 typing.Union[X, None]（Optional[X]）
